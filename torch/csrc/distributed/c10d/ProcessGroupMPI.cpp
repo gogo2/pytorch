@@ -980,11 +980,11 @@ c10::intrusive_ptr<Work> ProcessGroupMPI::_allgather_base(
   std::vector<at::Tensor> outputTensors = {outputTensor};
 
   auto entry = std::make_unique<WorkEntry>(
-      &inputTensor, &outputTensor, std::move(runFunc));
+      &inputTensors, &outputTensors, std::move(runFunc));
   return enqueue(
       std::move(entry),
       "mpi:_allgather_base",
-      std::optional<at::Tensor>(inputTensor));
+      std::optional<at::Tensor>(inputTensors));
 }
 
 } // namespace c10d
