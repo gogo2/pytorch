@@ -942,10 +942,38 @@ c10::intrusive_ptr<Work> ProcessGroupMPI::barrier(const BarrierOptions& opts) {
 }
 
 c10::intrusive_ptr<Work> ProcessGroupMPI::_allgather_base(
-    at::Tensor& /*unused */,
-    at::Tensor& /*unused */,
-    const AllgatherOptions& /*unused */) {
-  TORCH_CHECK(false, "no support for _allgather_base in MPI process group");
+    at::Tensor& outputTensor,
+    at::Tensor& inputTensor,
+    const AllgatherOptions& opts) {
+  checkSingleTensorHelper(inputTensor);
+  checkSingleTensorHelper(outputTensor);
+
+  if (static_cast<size_t>(size_) * inputTensor.size() != outputTensor.size()) {
+    TORCH_CHECK(false, "All gather: size of output tensor...");
+  }
+
+  std::function<void(std::unique_ptr<WorkEntry>&)> runFunc =
+      [this](std::unique_ptr<WorkEntry>& entry) {
+        auto data = entry->src;
+        auto outputData = entry->dst;
+
+        c10::DeviceGuard guard(data.device());
+        std::unique_lock<std::mutex> globalLock(pgGlobalMutex_);
+        MPI_CHECK(MPI_Allgather(
+            data.data_ptr(),
+            data.numel(),
+            mpiDatatype.at(data.scalar_type()),
+            outputData.data_ptr(),
+            data.numel(),
+            mpiDatatype.at(data.scalar_type()),
+            pgComm_));
+      };
+  auto entry = std::make_unique<WorkEntry>(
+      &inputTensor, &outputTensor, std::move(runFunc));
+  return enqueue(
+      std::move(entry),
+      "mpi:_allgather_base",
+      std::optional<at::Tensor>(inputTensor));
 }
 
 } // namespace c10d
