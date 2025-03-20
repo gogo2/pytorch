@@ -952,8 +952,8 @@ c10::intrusive_ptr<Work> ProcessGroupMPI::_allgather_base(
     TORCH_CHECK(false, "All gather: size of output tensor...");
   }
 
-  std::function<void(std::unique_ptr<WorkEntry>&)> runFunc =
-      [this](std::unique_ptr<WorkEntry>& entry) {
+  std::function<void(std::unique_ptr<WorkEntryScalar>&)> runFunc =
+      [this](std::unique_ptr<WorkEntryScalar>& entry) {
         auto data = entry->src;
         auto outputData = entry->dst;
 
@@ -968,7 +968,7 @@ c10::intrusive_ptr<Work> ProcessGroupMPI::_allgather_base(
             mpiDatatype.at(data.scalar_type()),
             pgComm_));
       };
-  auto entry = std::make_unique<WorkEntry>(
+  auto entry = std::make_unique<WorkEntryScalar>(
       &inputTensor, &outputTensor, std::move(runFunc));
   return enqueue(
       std::move(entry),

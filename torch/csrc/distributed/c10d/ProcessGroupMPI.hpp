@@ -55,6 +55,33 @@ struct WorkEntry {
   std::function<void(std::unique_ptr<WorkEntry>&)> run;
 };
 
+struct WorkEntryScalar {
+    explicit WorkEntryScalar(
+        at::Tensor* srcPtr,
+        at::Tensor* dstPtr,
+        std::function<void(std::unique_ptr<WorkEntryScalar>&)> run)
+        : dst(dstPtr ? *dstPtr : at::Tensor{}), run(std::move(run)) {
+        if (srcPtr) {
+            src = *srcPtr;
+        }
+    }
+
+    // Not copyable
+    WorkEntryScalar(const WorkEntryScalar&) = delete;
+    // Not copy assignable
+    WorkEntryScalar& operator=(const WorkEntryScalar&) = delete;
+
+    // For input and output tensors (in-place), we will always use src
+    at::Tensor src;
+
+    // Copy of user provided outputs.
+    const at::Tensor dst;
+
+    // src rank returned, for recv only
+    int* srcRank = nullptr;
+    std::function<void(std::unique_ptr<WorkEntryScalar>&)> run;
+};
+
 // ProcessGroupMPI implements MPI bindings for c10d.
 //
 // All functions on this class are expected to be called in the same
