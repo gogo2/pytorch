@@ -984,7 +984,7 @@ c10::intrusive_ptr<Work> ProcessGroupMPI::_allgather_base(
   return enqueue(
       std::move(entry),
       "mpi:_allgather_base",
-      std::optional<at::Tensor>(inputTensors));
+      std::optional<std::vector<at::Tensor>>(inputTensors));
 }
 
 } // namespace c10d
